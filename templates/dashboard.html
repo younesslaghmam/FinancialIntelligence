@@ -1,0 +1,673 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Financial AI Platform - Dashboard</title>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-tachometer-alt me-2"></i>Financial Dashboard</h2>
+                <p class="card-text">Monitor market data and get quick insights for your favorite symbols.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Quick Symbol Lookup</h3>
+            </div>
+            <div class="card-body">
+                <form id="symbolForm" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="symbol" class="form-label">Stock Symbol</label>
+                        <input type="text" class="form-control" id="symbol" placeholder="Enter symbol (e.g., AAPL)">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="days" class="form-label">Data Range</label>
+                        <select class="form-select" id="days">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="180">Last 180 days</option>
+                            <option value="365">Last year</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Load Data</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="dataContainer" class="d-none">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 id="chartTitle">Price Chart</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="priceChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 id="summaryTitle">Market Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Current Price:</span>
+                        <span id="currentPrice" class="fw-bold"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Change:</span>
+                        <span id="priceChange" class="fw-bold"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Open:</span>
+                        <span id="openPrice"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>High:</span>
+                        <span id="highPrice"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Low:</span>
+                        <span id="lowPrice"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Volume:</span>
+                        <span id="volume"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a id="technicalAnalysisLink" href="#" class="btn btn-outline-primary">Technical Analysis</a>
+                        <a id="sentimentLink" href="#" class="btn btn-outline-info">Sentiment Analysis</a>
+                        <a id="reportLink" href="#" class="btn btn-outline-warning">Generate Report</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>RSI Indicator</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="rsiChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>MACD Indicator</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="macdChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingContainer" class="text-center my-5 d-none">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3">Loading financial data...</p>
+</div>
+
+<div id="errorContainer" class="alert alert-danger d-none" role="alert">
+    <h4 class="alert-heading">Error</h4>
+    <p id="errorMessage">Unable to load data.</p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Watchlist</h3>
+            </div>
+            <div class="card-body">
+                <p>Add symbols to your watchlist for quick access:</p>
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="watchlistSymbol" placeholder="Enter symbol (e.g., MSFT)">
+                            <button class="btn btn-outline-primary" type="button" id="addToWatchlist">Add</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="watchlistTable">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Last Price</th>
+                                <th>Change</th>
+                                <th>Change %</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">No symbols in watchlist</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Symbol form submission
+    const symbolForm = document.getElementById('symbolForm');
+    const dataContainer = document.getElementById('dataContainer');
+    const loadingContainer = document.getElementById('loadingContainer');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    let priceChart = null;
+    let rsiChart = null;
+    let macdChart = null;
+    
+    // Local storage for watchlist
+    let watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+    
+    symbolForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const symbol = document.getElementById('symbol').value.trim().toUpperCase();
+        const days = document.getElementById('days').value;
+        
+        if (!symbol) {
+            alert('Please enter a valid symbol');
+            return;
+        }
+        
+        loadSymbolData(symbol, days);
+    });
+    
+    // Load data for symbol
+    function loadSymbolData(symbol, days) {
+        // Reset containers
+        dataContainer.classList.add('d-none');
+        errorContainer.classList.add('d-none');
+        loadingContainer.classList.remove('d-none');
+        
+        // Update chart titles
+        document.getElementById('chartTitle').textContent = `Price Chart: ${symbol}`;
+        document.getElementById('summaryTitle').textContent = `Market Summary: ${symbol}`;
+        
+        // Update action links
+        document.getElementById('technicalAnalysisLink').href = `/analysis?symbol=${symbol}`;
+        document.getElementById('sentimentLink').href = `/sentiment?symbol=${symbol}`;
+        document.getElementById('reportLink').href = `/reports/new?symbols=${symbol}`;
+        
+        // Fetch market data
+        fetch(`/api/market_data/${symbol}?days=${days}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load market data');
+                }
+                
+                displayMarketData(symbol, data.data);
+                
+                // Load RSI indicator
+                return fetch(`/api/indicators/${symbol}/RSI?days=${days}`);
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.warn("RSI data fetch failed:", data.error);
+                    return;
+                }
+                
+                displayRSIData(data.data);
+                
+                // Load MACD indicator
+                return fetch(`/api/indicators/${symbol}/MACD?days=${days}`);
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.warn("MACD data fetch failed:", data.error);
+                    return;
+                }
+                
+                displayMACDData(data.data);
+                
+                // Show data container
+                loadingContainer.classList.add('d-none');
+                dataContainer.classList.remove('d-none');
+            })
+            .catch(err => {
+                console.error("Error fetching data:", err);
+                loadingContainer.classList.add('d-none');
+                errorContainer.classList.remove('d-none');
+                errorMessage.textContent = err.message || "An error occurred while loading data.";
+            });
+    }
+    
+    // Display market data
+    function displayMarketData(symbol, marketData) {
+        if (!marketData || marketData.length === 0) {
+            throw new Error('No market data available');
+        }
+        
+        // Sort data by timestamp
+        marketData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Get the most recent data
+        const latest = marketData[marketData.length - 1];
+        const previous = marketData[marketData.length - 2] || latest;
+        
+        // Update summary values
+        document.getElementById('currentPrice').textContent = `$${latest.close.toFixed(2)}`;
+        
+        const change = latest.close - previous.close;
+        const changePercent = (change / previous.close * 100);
+        const changeText = `${change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
+        const changeElement = document.getElementById('priceChange');
+        changeElement.textContent = changeText;
+        
+        if (change >= 0) {
+            changeElement.classList.add('text-success');
+            changeElement.classList.remove('text-danger');
+        } else {
+            changeElement.classList.add('text-danger');
+            changeElement.classList.remove('text-success');
+        }
+        
+        document.getElementById('openPrice').textContent = `$${latest.open.toFixed(2)}`;
+        document.getElementById('highPrice').textContent = `$${latest.high.toFixed(2)}`;
+        document.getElementById('lowPrice').textContent = `$${latest.low.toFixed(2)}`;
+        document.getElementById('volume').textContent = latest.volume.toLocaleString();
+        
+        // Create price chart
+        const labels = marketData.map(d => {
+            const date = new Date(d.timestamp);
+            return date.toLocaleDateString();
+        });
+        
+        const prices = marketData.map(d => d.close);
+        
+        if (priceChart) {
+            priceChart.destroy();
+        }
+        
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${symbol} Price`,
+                    data: prices,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 1,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${symbol} Price History`
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // Display RSI data
+    function displayRSIData(rsiData) {
+        if (!rsiData || rsiData.length === 0) {
+            console.warn('No RSI data available');
+            return;
+        }
+        
+        // Sort data by timestamp
+        rsiData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Create RSI chart
+        const labels = rsiData.map(d => {
+            const date = new Date(d.timestamp);
+            return date.toLocaleDateString();
+        });
+        
+        const values = rsiData.map(d => d.value);
+        
+        if (rsiChart) {
+            rsiChart.destroy();
+        }
+        
+        const ctx = document.getElementById('rsiChart').getContext('2d');
+        rsiChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'RSI',
+                    data: values,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 1,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Relative Strength Index'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 10
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Add overbought/oversold lines
+        rsiChart.options.plugins.annotation = {
+            annotations: {
+                overbought: {
+                    type: 'line',
+                    yMin: 70,
+                    yMax: 70,
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1,
+                    borderDash: [5, 5]
+                },
+                oversold: {
+                    type: 'line',
+                    yMin: 30,
+                    yMax: 30,
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1,
+                    borderDash: [5, 5]
+                }
+            }
+        };
+        rsiChart.update();
+    }
+    
+    // Display MACD data
+    function displayMACDData(macdData) {
+        if (!macdData || macdData.length === 0) {
+            console.warn('No MACD data available');
+            return;
+        }
+        
+        // Sort data by timestamp
+        macdData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Create MACD chart
+        const labels = macdData.map(d => {
+            const date = new Date(d.timestamp);
+            return date.toLocaleDateString();
+        });
+        
+        const macdLine = macdData.map(d => d.value);
+        const signalLine = macdData.map(d => d.signal);
+        const histogram = macdData.map(d => d.histogram);
+        
+        if (macdChart) {
+            macdChart.destroy();
+        }
+        
+        const ctx = document.getElementById('macdChart').getContext('2d');
+        macdChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'MACD',
+                        data: macdLine,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Signal Line',
+                        data: signalLine,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: 'Histogram',
+                        data: histogram,
+                        type: 'bar',
+                        backgroundColor: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value >= 0 ? 'rgba(75, 192, 192, 0.5)' : 'rgba(255, 99, 132, 0.5)';
+                        },
+                        borderColor: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value >= 0 ? 'rgba(75, 192, 192, 1)' : 'rgba(255, 99, 132, 1)';
+                        },
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'MACD'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // Watchlist functionality
+    const addToWatchlistBtn = document.getElementById('addToWatchlist');
+    const watchlistSymbolInput = document.getElementById('watchlistSymbol');
+    const watchlistTable = document.getElementById('watchlistTable').getElementsByTagName('tbody')[0];
+    
+    // Add to watchlist
+    addToWatchlistBtn.addEventListener('click', function() {
+        const symbol = watchlistSymbolInput.value.trim().toUpperCase();
+        
+        if (!symbol) {
+            alert('Please enter a valid symbol');
+            return;
+        }
+        
+        // Check if already in watchlist
+        if (watchlist.includes(symbol)) {
+            alert('Symbol already in watchlist');
+            return;
+        }
+        
+        // Add to watchlist
+        watchlist.push(symbol);
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+        
+        // Update table
+        updateWatchlistTable();
+        
+        // Clear input
+        watchlistSymbolInput.value = '';
+    });
+    
+    // Update watchlist table
+    function updateWatchlistTable() {
+        // Clear table
+        watchlistTable.innerHTML = '';
+        
+        if (watchlist.length === 0) {
+            const row = watchlistTable.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = 5;
+            cell.className = 'text-center';
+            cell.textContent = 'No symbols in watchlist';
+            return;
+        }
+        
+        // Add each symbol
+        watchlist.forEach(symbol => {
+            const row = watchlistTable.insertRow();
+            
+            // Symbol cell
+            const symbolCell = row.insertCell();
+            symbolCell.textContent = symbol;
+            
+            // Price cell
+            const priceCell = row.insertCell();
+            priceCell.textContent = 'Loading...';
+            
+            // Change cell
+            const changeCell = row.insertCell();
+            changeCell.textContent = 'Loading...';
+            
+            // Change % cell
+            const changePercentCell = row.insertCell();
+            changePercentCell.textContent = 'Loading...';
+            
+            // Actions cell
+            const actionsCell = row.insertCell();
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'btn btn-sm btn-outline-primary me-2';
+            viewBtn.textContent = 'View';
+            viewBtn.addEventListener('click', function() {
+                document.getElementById('symbol').value = symbol;
+                symbolForm.dispatchEvent(new Event('submit'));
+            });
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'btn btn-sm btn-outline-danger';
+            removeBtn.textContent = 'Remove';
+            removeBtn.addEventListener('click', function() {
+                watchlist = watchlist.filter(s => s !== symbol);
+                localStorage.setItem('watchlist', JSON.stringify(watchlist));
+                updateWatchlistTable();
+            });
+            
+            actionsCell.appendChild(viewBtn);
+            actionsCell.appendChild(removeBtn);
+            
+            // Fetch latest price for the symbol
+            fetch(`/api/market_data/${symbol}?days=2`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success || !data.data || data.data.length < 2) {
+                        priceCell.textContent = 'N/A';
+                        changeCell.textContent = 'N/A';
+                        changePercentCell.textContent = 'N/A';
+                        return;
+                    }
+                    
+                    const latest = data.data[data.data.length - 1];
+                    const previous = data.data[data.data.length - 2];
+                    
+                    priceCell.textContent = `$${latest.close.toFixed(2)}`;
+                    
+                    const change = latest.close - previous.close;
+                    changeCell.textContent = change.toFixed(2);
+                    
+                    if (change >= 0) {
+                        changeCell.className = 'text-success';
+                    } else {
+                        changeCell.className = 'text-danger';
+                    }
+                    
+                    const changePercent = (change / previous.close * 100);
+                    changePercentCell.textContent = `${changePercent.toFixed(2)}%`;
+                    
+                    if (changePercent >= 0) {
+                        changePercentCell.className = 'text-success';
+                    } else {
+                        changePercentCell.className = 'text-danger';
+                    }
+                })
+                .catch(err => {
+                    console.error(`Error fetching data for ${symbol}:`, err);
+                    priceCell.textContent = 'Error';
+                    changeCell.textContent = 'Error';
+                    changePercentCell.textContent = 'Error';
+                });
+        });
+    }
+    
+    // Initialize watchlist
+    updateWatchlistTable();
+    
+    // Load default symbol if provided in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const symbolParam = urlParams.get('symbol');
+    
+    if (symbolParam) {
+        document.getElementById('symbol').value = symbolParam;
+        symbolForm.dispatchEvent(new Event('submit'));
+    } else if (watchlist.length > 0) {
+        // Load the first symbol in watchlist
+        document.getElementById('symbol').value = watchlist[0];
+        symbolForm.dispatchEvent(new Event('submit'));
+    }
+});
+</script>
+{% endblock %}

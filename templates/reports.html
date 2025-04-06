@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Financial AI Platform - Reports</title>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-file-alt me-2"></i>Financial Reports</h2>
+                <p class="card-text">Generate comprehensive reports with visualizations and insights.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Generate New Report</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('reports') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="symbols" class="form-label">Stock Symbols</label>
+                            <input type="text" class="form-control" id="symbols" name="symbols" 
+                                placeholder="Enter symbols separated by commas (e.g., AAPL,MSFT,GOOGL)" 
+                                value="{{ request.args.get('symbols', '') }}" required>
+                            <div class="form-text">You can analyze multiple symbols by separating them with commas.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="report_type" class="form-label">Report Type</label>
+                            <select class="form-select" id="report_type" name="report_type">
+                                <option value="comprehensive" {% if request.args.get('report_type') == 'comprehensive' %}selected{% endif %}>Comprehensive (Technical & Sentiment)</option>
+                                <option value="technical" {% if request.args.get('report_type') == 'technical' %}selected{% endif %}>Technical Analysis Only</option>
+                                <option value="sentiment" {% if request.args.get('report_type') == 'sentiment' %}selected{% endif %}>Sentiment Analysis Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label for="title" class="form-label">Report Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                placeholder="Enter a title for your report">
+                            <div class="form-text">If left blank, a title will be automatically generated based on the symbols.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">Generate Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if reports %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Saved Reports</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Symbols</th>
+                                <th>Type</th>
+                                <th>Date Generated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ report.title }}</td>
+                                <td>{{ report.symbols }}</td>
+                                <td>
+                                    {% if report.report_type == 'comprehensive' %}
+                                        <span class="badge bg-primary">Comprehensive</span>
+                                    {% elif report.report_type == 'technical' %}
+                                        <span class="badge bg-success">Technical</span>
+                                    {% elif report.report_type == 'sentiment' %}
+                                        <span class="badge bg-info">Sentiment</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <h4 class="alert-heading">No Reports Yet</h4>
+            <p>You haven't generated any reports yet. Use the form above to create your first report.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>About Financial Reports</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">Comprehensive</h4>
+                            </div>
+                            <div class="card-body">
+                                <p>A complete analysis including:</p>
+                                <ul>
+                                    <li>Technical indicators with insights</li>
+                                    <li>Sentiment analysis from news sources</li>
+                                    <li>Price charts and trend analysis</li>
+                                    <li>Visual comparison of multiple assets</li>
+                                </ul>
+                                <p>Perfect for portfolio reviews and strategic planning.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">Technical</h4>
+                            </div>
+                            <div class="card-body">
+                                <p>Focuses on price action and indicators:</p>
+                                <ul>
+                                    <li>Moving averages (SMA, EMA)</li>
+                                    <li>Momentum indicators (RSI, MACD)</li>
+                                    <li>Volatility measures (Bollinger Bands)</li>
+                                    <li>Trend strength analysis</li>
+                                </ul>
+                                <p>Ideal for day traders and technical analysts.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="mb-0">Sentiment</h4>
+                            </div>
+                            <div class="card-body">
+                                <p>Analyzes market perception through:</p>
+                                <ul>
+                                    <li>News sentiment scoring</li>
+                                    <li>Article summaries and insights</li>
+                                    <li>Sentiment trend analysis</li>
+                                    <li>Market sentiment correlation</li>
+                                </ul>
+                                <p>Great for understanding market psychology and news impact.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

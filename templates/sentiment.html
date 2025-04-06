@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Financial AI Platform - Sentiment Analysis</title>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-newspaper me-2"></i>Sentiment Analysis</h2>
+                <p class="card-text">Analyze financial news and social media sentiment to gauge market perception.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Run Sentiment Analysis</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('sentiment') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="symbol" class="form-label">Stock Symbol</label>
+                            <input type="text" class="form-control" id="symbol" name="symbol" placeholder="Enter symbol (e.g., AAPL)" value="{{ symbol if symbol else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="days" class="form-label">Timeframe</label>
+                            <select class="form-select" id="days" name="days">
+                                <option value="1">Last 24 hours</option>
+                                <option value="3">Last 3 days</option>
+                                <option value="7" selected>Last 7 days</option>
+                                <option value="14">Last 14 days</option>
+                                <option value="30">Last 30 days</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">Run Analysis</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if results %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Sentiment Analysis Results: {{ results.symbol }}</h3>
+                <p class="text-muted mb-0">
+                    Analyzing news from the past {{ results.days }} days
+                </p>
+            </div>
+            <div class="card-body">
+                {% if results.sentiment_results %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h4>Sentiment Summary</h4>
+                        <canvas id="sentimentPieChart" height="250"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Sentiment Trends</h4>
+                        <canvas id="sentimentTrendChart" height="250"></canvas>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="alert alert-info">
+                            <h5>Key Insights:</h5>
+                            <ul>
+                                {% set pos_count = results.sentiment_results|selectattr('sentiment_label', 'equalto', 'Positive')|list|length %}
+                                {% set neg_count = results.sentiment_results|selectattr('sentiment_label', 'equalto', 'Negative')|list|length %}
+                                {% set neu_count = results.sentiment_results|selectattr('sentiment_label', 'equalto', 'Neutral')|list|length %}
+                                {% set total = results.sentiment_results|length %}
+                                
+                                <li>Overall sentiment for {{ results.symbol }} is 
+                                    {% if pos_count > neg_count and pos_count > neu_count %}
+                                        <strong class="text-success">predominantly positive</strong>
+                                    {% elif neg_count > pos_count and neg_count > neu_count %}
+                                        <strong class="text-danger">predominantly negative</strong>
+                                    {% else %}
+                                        <strong>mostly neutral</strong>
+                                    {% endif %}
+                                    based on {{ total }} analyzed news articles.
+                                </li>
+                                
+                                <li>
+                                    Distribution: {{ (pos_count/total*100)|round }}% positive, 
+                                    {{ (neu_count/total*100)|round }}% neutral, 
+                                    {{ (neg_count/total*100)|round }}% negative
+                                </li>
+                                
+                                {% set avg_score = (results.sentiment_results|sum(attribute='sentiment_score') / total) %}
+                                <li>
+                                    Average sentiment score: {{ "%.2f"|format(avg_score) }} 
+                                    (range: -1.0 to 1.0, where positive values indicate positive sentiment)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4>News Articles</h4>
+                        {% if results.news_articles %}
+                            {% for article in results.news_articles %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ article.title }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        Source: {{ article.source }} | 
+                                        Published: {{ article.published_at }}
+                                    </h6>
+                                    
+                                    {% set sentiment = results.sentiment_results|selectattr('news_id', 'equalto', article.id)|first %}
+                                    {% if sentiment %}
+                                        <div class="sentiment-badge 
+                                            {% if sentiment.sentiment_label == 'Positive' %}
+                                                badge bg-success
+                                            {% elif sentiment.sentiment_label == 'Negative' %}
+                                                badge bg-danger
+                                            {% else %}
+                                                badge bg-secondary
+                                            {% endif %}
+                                        ">
+                                            {{ sentiment.sentiment_label }} ({{ "%.2f"|format(sentiment.sentiment_score) }})
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <p class="card-text mt-2">{{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}</p>
+                                    
+                                    {% if article.url %}
+                                    <a href="{{ article.url }}" target="_blank" class="card-link">Read full article</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-warning">
+                                No news articles found for {{ results.symbol }} in the selected time period.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('reports') }}?symbols={{ results.symbol }}&report_type=sentiment" class="btn btn-outline-primary">Generate Full Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>About Sentiment Analysis</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>What is Sentiment Analysis?</h4>
+                        <p>Sentiment analysis uses natural language processing (NLP) to identify and extract subjective information from text data. In financial markets, this technology analyzes news articles, social media posts, and other text sources to gauge market sentiment about specific assets.</p>
+                        <p>Our system uses open-source NLP models to classify sentiment as:</p>
+                        <ul>
+                            <li><strong class="text-success">Positive</strong>: Indicates bullish sentiment or positive news</li>
+                            <li><strong>Neutral</strong>: Indicates balanced or factual reporting</li>
+                            <li><strong class="text-danger">Negative</strong>: Indicates bearish sentiment or negative news</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>How to Use Sentiment Data</h4>
+                        <p>Sentiment analysis can complement technical and fundamental analysis by providing insights into market perception:</p>
+                        <ul>
+                            <li><strong>Contrarian Indicator</strong>: Extremely positive sentiment might indicate market euphoria, potentially signaling a reversal.</li>
+                            <li><strong>Confirmation Tool</strong>: Sentiment aligning with price trends can reinforce trading decisions.</li>
+                            <li><strong>Early Warning System</strong>: Negative sentiment shifts may precede price movements.</li>
+                            <li><strong>Volatility Predictor</strong>: Mixed sentiment often correlates with increased volatility.</li>
+                        </ul>
+                        <p><em>Note: Sentiment analysis should be one of many tools in your investment decision process, not used in isolation.</em></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if results and results.sentiment_results %}
+    // Extract sentiment data
+    const sentimentData = {{ results.sentiment_results|tojson }};
+    
+    // Count sentiment types
+    let positive = 0;
+    let neutral = 0;
+    let negative = 0;
+    
+    sentimentData.forEach(item => {
+        if (item.sentiment_label === 'Positive') positive++;
+        else if (item.sentiment_label === 'Negative') negative++;
+        else neutral++;
+    });
+    
+    // Create sentiment distribution pie chart
+    const pieCtx = document.getElementById('sentimentPieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                data: [positive, neutral, negative],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(201, 203, 207, 0.6)',
+                    'rgba(255, 99, 132, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(201, 203, 207, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Sentiment Distribution'
+                }
+            }
+        }
+    });
+    
+    // Sort sentiment data by date for trend analysis
+    sentimentData.sort((a, b) => {
+        const articleA = {{ results.news_articles|tojson }}.find(article => article.id === a.news_id);
+        const articleB = {{ results.news_articles|tojson }}.find(article => article.id === b.news_id);
+        return new Date(articleA?.published_at || 0) - new Date(articleB?.published_at || 0);
+    });
+    
+    // Extract dates and scores for trend chart
+    const dates = sentimentData.map(item => {
+        const article = {{ results.news_articles|tojson }}.find(article => article.id === item.news_id);
+        return article?.published_at ? new Date(article.published_at).toLocaleDateString() : 'Unknown';
+    });
+    
+    const scores = sentimentData.map(item => item.sentiment_score);
+    
+    // Create sentiment trend chart
+    const trendCtx = document.getElementById('sentimentTrendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: 'Sentiment Score',
+                data: scores,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Sentiment Score Trend'
+                }
+            },
+            scales: {
+                y: {
+                    min: -1,
+                    max: 1,
+                    ticks: {
+                        stepSize: 0.5
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Financial AI Platform - Home</title>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-robot me-2"></i>Multi-Agent Financial AI Platform</h2>
+                <p class="card-text">
+                    Welcome to our open-source financial analysis platform powered by AI agents. This system provides market data, technical analysis, sentiment analysis, and automated reporting.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h3><i class="fas fa-chart-bar me-2"></i>Technical Analysis</h3>
+            </div>
+            <div class="card-body">
+                <p>Our technical analysis agent calculates key indicators:</p>
+                <ul>
+                    <li><strong>Moving Averages (SMA/EMA)</strong>: Identify trends over specific time periods</li>
+                    <li><strong>RSI (Relative Strength Index)</strong>: Measure momentum and identify overbought/oversold conditions</li>
+                    <li><strong>MACD</strong>: Identify changes in strength, direction, momentum, and duration of trends</li>
+                    <li><strong>Bollinger Bands</strong>: Measure volatility and identify potential breakouts</li>
+                </ul>
+                <a href="{{ url_for('analysis') }}" class="btn btn-outline-primary mt-3">Try Technical Analysis</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h3><i class="fas fa-newspaper me-2"></i>Sentiment Analysis</h3>
+            </div>
+            <div class="card-body">
+                <p>Our NLP agent analyzes financial news and social media to determine market sentiment:</p>
+                <ul>
+                    <li><strong>News Processing</strong>: Analyze articles from financial publications</li>
+                    <li><strong>Sentiment Scoring</strong>: Quantify positive, neutral, or negative sentiment</li>
+                    <li><strong>Trend Identification</strong>: Track changing sentiment over time</li>
+                    <li><strong>Market Correlation</strong>: See how sentiment relates to price movements</li>
+                </ul>
+                <a href="{{ url_for('sentiment') }}" class="btn btn-outline-info mt-3">Try Sentiment Analysis</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h3><i class="fas fa-database me-2"></i>Data Agent</h3>
+            </div>
+            <div class="card-body">
+                <p>Our data agent retrieves and manages financial market data:</p>
+                <ul>
+                    <li><strong>Real-time & Historical Prices</strong>: Access current and past market data</li>
+                    <li><strong>Multiple Sources</strong>: Integrate with open financial APIs</li>
+                    <li><strong>Time-Series Storage</strong>: Efficiently store and query historical data</li>
+                    <li><strong>Automatic Updates</strong>: Stay current with latest market information</li>
+                </ul>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-success mt-3">View Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h3><i class="fas fa-file-alt me-2"></i>Report Generation</h3>
+            </div>
+            <div class="card-body">
+                <p>Our report agent creates comprehensive financial insights:</p>
+                <ul>
+                    <li><strong>Custom Analysis Reports</strong>: Generate detailed analysis for any symbol</li>
+                    <li><strong>Visualizations</strong>: View charts and graphs of financial data</li>
+                    <li><strong>Multi-timeframe Analysis</strong>: Compare different time periods</li>
+                    <li><strong>Export Options</strong>: Save reports in HTML format</li>
+                </ul>
+                <a href="{{ url_for('reports') }}" class="btn btn-outline-warning mt-3">Generate Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3><i class="fas fa-code me-2"></i>Open Source & Extensible</h3>
+            </div>
+            <div class="card-body">
+                <p>This platform is built entirely with open-source components:</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>Data & Analysis</h5>
+                        <ul>
+                            <li>Python, Pandas, NumPy</li>
+                            <li>yFinance/Alpha Vantage APIs</li>
+                            <li>SQLite/InfluxDB for storage</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>AI & NLP</h5>
+                        <ul>
+                            <li>NLTK and VADER</li>
+                            <li>Hugging Face Transformers</li>
+                            <li>Customizable agent system</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Visualization</h5>
+                        <ul>
+                            <li>Matplotlib/Chart.js</li>
+                            <li>Flask web framework</li>
+                            <li>Bootstrap for responsive UI</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

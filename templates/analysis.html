@@ -1,0 +1,586 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Financial AI Platform - Technical Analysis</title>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-chart-line me-2"></i>Technical Analysis</h2>
+                <p class="card-text">Analyze market data with powerful technical indicators to identify patterns and trends.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Run Analysis</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('analysis') }}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="symbol" class="form-label">Stock Symbol</label>
+                            <input type="text" class="form-control" id="symbol" name="symbol" placeholder="Enter symbol (e.g., AAPL)" value="{{ symbol if symbol else '' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Select Indicators</label>
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="indicators" value="SMA" id="sma" checked>
+                                        <label class="form-check-label" for="sma">
+                                            Simple Moving Average (SMA)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="indicators" value="EMA" id="ema" checked>
+                                        <label class="form-check-label" for="ema">
+                                            Exponential Moving Average (EMA)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="indicators" value="RSI" id="rsi" checked>
+                                        <label class="form-check-label" for="rsi">
+                                            Relative Strength Index (RSI)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="indicators" value="MACD" id="macd" checked>
+                                        <label class="form-check-label" for="macd">
+                                            MACD
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="indicators" value="BBANDS" id="bbands" checked>
+                                        <label class="form-check-label" for="bbands">
+                                            Bollinger Bands
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">Run Analysis</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if results %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Analysis Results: {{ results.symbol }}</h3>
+                <p class="text-muted mb-0">
+                    Period: {{ results.start_date.strftime('%Y-%m-%d') }} to {{ results.end_date.strftime('%Y-%m-%d') }}
+                </p>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4>Price Chart</h4>
+                        <canvas id="priceChart" height="300"></canvas>
+                    </div>
+                </div>
+                
+                {% if 'RSI' in results.analysis_results %}
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4>Relative Strength Index (RSI)</h4>
+                        <canvas id="rsiChart" height="200"></canvas>
+                        <div class="alert alert-info mt-2">
+                            <strong>RSI Insight:</strong>
+                            {% set last_rsi = results.analysis_results.RSI[-1] %}
+                            {% if last_rsi.value > 70 %}
+                                RSI is currently at {{ "%.2f"|format(last_rsi.value) }}, suggesting the asset may be overbought. Consider watching for potential reversal signals.
+                            {% elif last_rsi.value < 30 %}
+                                RSI is currently at {{ "%.2f"|format(last_rsi.value) }}, suggesting the asset may be oversold. Consider watching for potential buying opportunities.
+                            {% else %}
+                                RSI is currently at {{ "%.2f"|format(last_rsi.value) }}, indicating neither overbought nor oversold conditions.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if 'MACD' in results.analysis_results %}
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4>MACD</h4>
+                        <canvas id="macdChart" height="250"></canvas>
+                        <div class="alert alert-info mt-2">
+                            <strong>MACD Insight:</strong>
+                            {% set last_macd = results.analysis_results.MACD[-1] %}
+                            {% set prev_macd = results.analysis_results.MACD[-2] if results.analysis_results.MACD|length > 1 else last_macd %}
+                            {% if last_macd.value > last_macd.signal and prev_macd.value <= prev_macd.signal %}
+                                MACD has crossed above the signal line, potentially indicating a bullish trend is forming.
+                            {% elif last_macd.value < last_macd.signal and prev_macd.value >= prev_macd.signal %}
+                                MACD has crossed below the signal line, potentially indicating a bearish trend is forming.
+                            {% elif last_macd.value > 0 and last_macd.signal > 0 %}
+                                MACD and signal line are both positive, suggesting continued upward momentum.
+                            {% elif last_macd.value < 0 and last_macd.signal < 0 %}
+                                MACD and signal line are both negative, suggesting continued downward momentum.
+                            {% else %}
+                                MACD is at {{ "%.2f"|format(last_macd.value) }} with signal line at {{ "%.2f"|format(last_macd.signal) }}.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if 'BBANDS' in results.analysis_results %}
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4>Bollinger Bands</h4>
+                        <canvas id="bbandsChart" height="250"></canvas>
+                        <div class="alert alert-info mt-2">
+                            <strong>Bollinger Bands Insight:</strong>
+                            {% set last_bb = results.analysis_results.BBANDS[-1] %}
+                            {% set bandwidth = ((last_bb.upper - last_bb.lower) / last_bb.middle * 100) %}
+                            {% if bandwidth > 20 %}
+                                Bollinger Bands width is {{ "%.2f"|format(bandwidth) }}%, indicating high volatility.
+                            {% elif bandwidth < 10 %}
+                                Bollinger Bands width is {{ "%.2f"|format(bandwidth) }}%, suggesting a potential breakout may occur soon.
+                            {% else %}
+                                Bollinger Bands width is {{ "%.2f"|format(bandwidth) }}%, showing moderate volatility.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if 'SMA' in results.analysis_results or 'EMA' in results.analysis_results %}
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4>Moving Averages</h4>
+                        <canvas id="maChart" height="250"></canvas>
+                        <div class="alert alert-info mt-2">
+                            <strong>Moving Averages Insight:</strong>
+                            {% if 'SMA' in results.analysis_results and results.analysis_results.SMA|length > 5 %}
+                                {% set first_sma = results.analysis_results.SMA[-5].value %}
+                                {% set last_sma = results.analysis_results.SMA[-1].value %}
+                                {% set sma_change = ((last_sma - first_sma) / first_sma * 100) %}
+                                {% if last_sma > first_sma %}
+                                    SMA is in an uptrend, increasing by {{ "%.2f"|format(sma_change) }}% over the last 5 periods.
+                                {% elif last_sma < first_sma %}
+                                    SMA is in a downtrend, decreasing by {{ "%.2f"|format(-sma_change) }}% over the last 5 periods.
+                                {% else %}
+                                    SMA has remained flat recently.
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if 'EMA' in results.analysis_results and results.analysis_results.EMA|length > 5 %}
+                                {% set first_ema = results.analysis_results.EMA[-5].value %}
+                                {% set last_ema = results.analysis_results.EMA[-1].value %}
+                                {% set ema_change = ((last_ema - first_ema) / first_ema * 100) %}
+                                {% if last_ema > first_ema %}
+                                    EMA is in an uptrend, increasing by {{ "%.2f"|format(ema_change) }}% over the last 5 periods.
+                                {% elif last_ema < first_ema %}
+                                    EMA is in a downtrend, decreasing by {{ "%.2f"|format(-ema_change) }}% over the last 5 periods.
+                                {% else %}
+                                    EMA has remained flat recently.
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('reports') }}?symbols={{ results.symbol }}&report_type=technical" class="btn btn-outline-primary">Generate Full Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Technical Indicators Guide</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Moving Averages</h4>
+                        <p>Moving averages smooth out price data to create a single flowing line, making it easier to identify the direction of the trend.</p>
+                        <ul>
+                            <li><strong>Simple Moving Average (SMA)</strong>: Average of prices over a specific time period.</li>
+                            <li><strong>Exponential Moving Average (EMA)</strong>: Gives more weight to recent prices, making it more responsive to new information.</li>
+                        </ul>
+                        <p><strong>Interpretation:</strong> When price crosses above a moving average, it can signal a bullish trend. When price crosses below, it can signal a bearish trend.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Relative Strength Index (RSI)</h4>
+                        <p>RSI measures the speed and change of price movements, oscillating between 0 and 100.</p>
+                        <ul>
+                            <li><strong>Above 70</strong>: Considered overbought, a potential sell signal.</li>
+                            <li><strong>Below 30</strong>: Considered oversold, a potential buy signal.</li>
+                        </ul>
+                        <p><strong>Interpretation:</strong> RSI can also form patterns like double tops or bottoms that may not be visible on the price chart itself.</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h4>MACD (Moving Average Convergence Divergence)</h4>
+                        <p>MACD shows the relationship between two moving averages of a security's price.</p>
+                        <ul>
+                            <li><strong>MACD Line</strong>: The difference between 12-day and 26-day EMAs.</li>
+                            <li><strong>Signal Line</strong>: 9-day EMA of the MACD Line.</li>
+                            <li><strong>Histogram</strong>: The difference between the MACD and Signal lines.</li>
+                        </ul>
+                        <p><strong>Interpretation:</strong> A crossover of the MACD line above the signal line is a potential buy signal, while a cross below is a potential sell signal.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Bollinger Bands</h4>
+                        <p>Bollinger Bands consist of a middle band (20-day SMA) with an upper and lower band placed 2 standard deviations away.</p>
+                        <ul>
+                            <li><strong>Narrow Bands</strong>: Indicate low volatility.</li>
+                            <li><strong>Wide Bands</strong>: Indicate high volatility.</li>
+                        </ul>
+                        <p><strong>Interpretation:</strong> Prices tend to bounce within the bands. A breakout from the bands signals a potential continuation in the same direction.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates if not provided
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    if (!startDateInput.value) {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        startDateInput.value = threeMonthsAgo.toISOString().split('T')[0];
+    }
+    
+    if (!endDateInput.value) {
+        const today = new Date();
+        endDateInput.value = today.toISOString().split('T')[0];
+    }
+    
+    {% if results %}
+    // Extract data for charts
+    const marketData = {{ results.market_data|tojson }};
+    
+    // Format dates for display
+    const dates = marketData.map(d => {
+        const date = new Date(d.timestamp);
+        return date.toLocaleDateString();
+    });
+    
+    // Price chart
+    const priceData = marketData.map(d => d.close);
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: '{{ results.symbol }} Close Price',
+                data: priceData,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.1,
+                pointRadius: 1,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '{{ results.symbol }} Price History'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    
+    // RSI Chart
+    {% if 'RSI' in results.analysis_results %}
+    const rsiData = {{ results.analysis_results.RSI|tojson }};
+    const rsiValues = rsiData.map(d => d.value);
+    const rsiCtx = document.getElementById('rsiChart').getContext('2d');
+    new Chart(rsiCtx, {
+        type: 'line',
+        data: {
+            labels: dates.slice(-rsiValues.length),
+            datasets: [{
+                label: 'RSI',
+                data: rsiValues,
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Relative Strength Index (RSI)'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        stepSize: 10
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+    
+    // MACD Chart
+    {% if 'MACD' in results.analysis_results %}
+    const macdData = {{ results.analysis_results.MACD|tojson }};
+    const macdLine = macdData.map(d => d.value);
+    const signalLine = macdData.map(d => d.signal);
+    const histogram = macdData.map(d => d.histogram);
+    
+    const macdCtx = document.getElementById('macdChart').getContext('2d');
+    new Chart(macdCtx, {
+        type: 'line',
+        data: {
+            labels: dates.slice(-macdLine.length),
+            datasets: [
+                {
+                    label: 'MACD',
+                    data: macdLine,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'Signal Line',
+                    data: signalLine,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'Histogram',
+                    data: histogram,
+                    type: 'bar',
+                    backgroundColor: histogram.map(v => v >= 0 ? 'rgba(75, 192, 192, 0.5)' : 'rgba(255, 99, 132, 0.5)'),
+                    borderColor: histogram.map(v => v >= 0 ? 'rgba(75, 192, 192, 1)' : 'rgba(255, 99, 132, 1)'),
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'MACD'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    {% endif %}
+    
+    // Bollinger Bands Chart
+    {% if 'BBANDS' in results.analysis_results %}
+    const bbandsData = {{ results.analysis_results.BBANDS|tojson }};
+    const upperBand = bbandsData.map(d => d.upper);
+    const middleBand = bbandsData.map(d => d.middle);
+    const lowerBand = bbandsData.map(d => d.lower);
+    
+    const bbandsCtx = document.getElementById('bbandsChart').getContext('2d');
+    new Chart(bbandsCtx, {
+        type: 'line',
+        data: {
+            labels: dates.slice(-upperBand.length),
+            datasets: [
+                {
+                    label: 'Upper Band',
+                    data: upperBand,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.1,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'Middle Band (SMA)',
+                    data: middleBand,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'Lower Band',
+                    data: lowerBand,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.1,
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'Price',
+                    data: priceData.slice(-upperBand.length),
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Bollinger Bands'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    {% endif %}
+    
+    // Moving Averages Chart
+    {% if 'SMA' in results.analysis_results or 'EMA' in results.analysis_results %}
+    const maCtx = document.getElementById('maChart').getContext('2d');
+    const datasets = [{
+        label: 'Price',
+        data: priceData,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 2,
+        tension: 0.1,
+        pointRadius: 0,
+        fill: false
+    }];
+    
+    {% if 'SMA' in results.analysis_results %}
+    const smaData = {{ results.analysis_results.SMA|tojson }};
+    const smaValues = smaData.map(d => d.value);
+    
+    datasets.push({
+        label: 'SMA',
+        data: smaValues,
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 2,
+        tension: 0.1,
+        pointRadius: 0,
+        fill: false
+    });
+    {% endif %}
+    
+    {% if 'EMA' in results.analysis_results %}
+    const emaData = {{ results.analysis_results.EMA|tojson }};
+    const emaValues = emaData.map(d => d.value);
+    
+    datasets.push({
+        label: 'EMA',
+        data: emaValues,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 2,
+        tension: 0.1,
+        pointRadius: 0,
+        fill: false
+    });
+    {% endif %}
+    
+    new Chart(maCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Moving Averages'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    {% endif %}
+    {% endif %}
+});
+</script>
+{% endblock %}
